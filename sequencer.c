@@ -1526,8 +1526,9 @@ static int update_squash_messages(enum todo_command command,
 	struct strbuf buf = STRBUF_INIT;
 	int res;
 	const char *message, *body;
+	int fixup_count = opts->current_fixup_count + 2;
 
-	if (opts->current_fixup_count > 0) {
+	if (fixup_count > 2) {
 		struct strbuf header = STRBUF_INIT;
 		char *eol;
 
@@ -1540,7 +1541,7 @@ static int update_squash_messages(enum todo_command command,
 
 		strbuf_addf(&header, "%c ", comment_line_char);
 		strbuf_addf(&header, _("This is a combination of %d commits."),
-			    opts->current_fixup_count + 2);
+			    fixup_count);
 		strbuf_splice(&buf, 0, eol - buf.buf, header.buf, header.len);
 		strbuf_release(&header);
 	} else {
@@ -1582,18 +1583,19 @@ static int update_squash_messages(enum todo_command command,
 		unlink(rebase_path_fixup_msg());
 		strbuf_addf(&buf, "\n%c ", comment_line_char);
 		strbuf_addf(&buf, _("This is the commit message #%d:"),
-			    ++opts->current_fixup_count + 1);
+			    fixup_count);
 		strbuf_addstr(&buf, "\n\n");
 		strbuf_addstr(&buf, body);
 	} else if (command == TODO_FIXUP) {
 		strbuf_addf(&buf, "\n%c ", comment_line_char);
 		strbuf_addf(&buf, _("The commit message #%d will be skipped:"),
-			    ++opts->current_fixup_count + 1);
+			    fixup_count);
 		strbuf_addstr(&buf, "\n\n");
 		strbuf_add_commented_lines(&buf, body, strlen(body));
 	} else
 		return error(_("unknown command: %d"), command);
 	unuse_commit_buffer(commit, message);
+	opts->current_fixup_count++;
 
 	res = write_message(buf.buf, buf.len, rebase_path_squash_msg(), 0);
 	strbuf_release(&buf);
